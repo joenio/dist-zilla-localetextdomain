@@ -59,7 +59,18 @@ sub validate_args {
         if @{ $args } < 1;
 
     require Locale::Codes::Language;
-    require Locale::Codes::Country;
+    my ($code2language, $code2country) = (undef, undef);
+    if ($Locale::Codes::Language::VERSION > '3.16') {
+      require Locale::Codes::Country;
+      $code2language = \&Locale::Codes::Language::code2language;
+      $code2country = \&Locale::Codes::Country::code2country;
+    }
+    else {
+      require Locale::Language;
+      require Locale::Country;
+      $code2language = \&Locale::Language::code2language;
+      $code2country = \&Locale::Country::code2country;
+    }
 
     for my $lang ( @{ $args } ) {
         my ($name, $enc) = split /[.]/, $lang, 2;
@@ -71,10 +82,10 @@ sub validate_args {
 
         my ($lang, $country) = split /[-_]/, $name;
         $self->zilla->log_fatal(qq{"$lang" is not a valid language code})
-            unless Locale::Codes::Language::code2language($lang);
+            unless &$code2language($lang);
         if ($country) {
             $self->zilla->log_fatal(qq{"$country" is not a valid country code})
-                unless Locale::Codes::Country::code2country($country);
+                unless &$code2country($country);
         }
     }
 }
